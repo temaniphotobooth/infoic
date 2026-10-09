@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generator Invoice A4 - Temani Photobooth</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #e9ecef; color: #333; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+    .app-header { background: #2c3e50; color: #fff; padding: 15px 20px; text-align: center; font-size: 1.1rem; font-weight: bold; letter-spacing: 1px; z-index: 20; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .main-container { display: flex; flex: 1; overflow: hidden; }
+
+    /* ===== FORM ===== */
+    .generator-panel { width: 450px; background: #fff; padding: 20px; overflow-y: auto; border-right: 1px solid #ddd; box-shadow: 2px 0 10px rgba(0,0,0,0.05); z-index: 10; }
+    .generator-panel h2 { font-size: 1rem; color: #2c3e50; border-bottom: 2px solid #ecf0f1; padding-bottom: 8px; margin: 20px 0 15px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .generator-panel h2:first-child { margin-top: 0; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; color: #555; }
+    .form-group input[type="text"], .form-group input[type="number"], .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; font-family: inherit; background: #fff; }
+    .form-group textarea { min-height: 150px; resize: vertical; line-height: 1.4; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
+    .hint { font-size: 0.72rem; color: #888; margin-top: 4px; }
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    #dp-box { display: none; background: #fff8e6; border: 1px solid #f0d58a; border-radius: 6px; padding: 12px; margin-bottom: 15px; }
+    .btn-print { width: 100%; background: #27ae60; color: #fff; padding: 14px; border: none; border-radius: 4px; font-size: 1rem; font-weight: bold; cursor: pointer; margin: 20px 0 30px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    .btn-print:hover { background: #219150; }
+
+    /* ===== PREVIEW ===== */
+    .preview-panel { flex: 1; background: #525659; overflow: auto; padding: 30px; display: flex; justify-content: center; align-items: flex-start; }
+
+    /* ===== KERTAS A4 PORTRAIT ===== */
+    .a4 {
+        width: 210mm; height: 297mm; background: #fff; padding: 14mm 15mm;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3); position: relative;
+        display: flex; flex-direction: column; flex-shrink: 0; zoom: var(--z, 1);
+        overflow: hidden;
+    }
+    .stamp { position: absolute; top: 62mm; right: 22mm; font-size: 3.2rem; font-weight: 900; border: 4px solid; padding: 5px 22px; border-radius: 8px; transform: rotate(-15deg); letter-spacing: 0.15em; opacity: 0.7; pointer-events: none; display: none; }
+    .stamp.paid { color: #27ae60; border-color: #27ae60; display: block; }
+    .stamp.dp { color: #e67e22; border-color: #e67e22; display: block; }
+
+    .inv-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2c3e50; padding-bottom: 10px; margin-bottom: 18px; }
+    .inv-title { font-size: 2.6rem; font-weight: 900; color: #2c3e50; line-height: 1; }
+    #inv-logo-img { max-height: 100px; object-fit: contain; }
+
+    .inv-meta { display: flex; justify-content: space-between; margin-bottom: 18px; }
+    .meta-label { font-weight: bold; color: #7f8c8d; font-size: 0.75rem; text-transform: uppercase; margin-bottom: 3px; }
+    .meta-val { font-size: 0.95rem; font-weight: bold; color: #2c3e50; margin-bottom: 8px; }
+    .meta-right { text-align: right; }
+
+    .inv-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    .inv-table th { background: #f8f9fa; padding: 7px 8px; text-align: left; font-size: 0.75rem; color: #333; text-transform: uppercase; border-bottom: 2px solid #333; border-top: 2px solid #333; }
+    .inv-table th:nth-child(2), .inv-table th:nth-child(3) { text-align: center; }
+    .inv-table th:last-child { text-align: right; }
+    .inv-table td { padding: 9px 8px; font-size: 0.88rem; border-bottom: 1px solid #ecf0f1; vertical-align: top; color: #111; }
+    .inv-table td:nth-child(2), .inv-table td:nth-child(3) { text-align: center; }
+    .inv-table td:last-child { text-align: right; font-weight: bold; }
+
+    /* Benefit */
+    .benefit-box { border: 1px solid #d5dbe0; border-radius: 6px; padding: 10px 14px; margin-bottom: auto; background: #fafbfc; }
+    .benefit-title { font-size: 0.78rem; font-weight: 800; color: #2c3e50; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+    .benefit-list { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px 12px; }
+    .benefit-list li { font-size: 0.8rem; color: #111; padding-left: 16px; position: relative; }
+    .benefit-list li::before { content: "✓"; position: absolute; left: 0; color: #27ae60; font-weight: 900; }
+    .bonus-title { margin-top: 10px; font-size: 0.78rem; font-weight: 800; color: #c0392b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+    .bonus-list li::before { content: "★"; color: #e67e22; }
+
+    /* Total */
+    .inv-footer-calc { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 18px; gap: 20px; }
+    .payment-info { font-size: 0.88rem; line-height: 1.5; color: #111; }
+    .payment-info .note { margin-top: 8px; font-size: 0.75rem; color: #7f8c8d; font-style: italic; max-width: 85mm; }
+    .totals { min-width: 78mm; }
+    .tot-row { display: flex; justify-content: space-between; gap: 15px; font-size: 0.9rem; padding: 3px 0; color: #111; }
+    .tot-row.grand { font-size: 1.2rem; font-weight: 900; border-top: 2px solid #111; margin-top: 4px; padding-top: 6px; }
+    .tot-row.sisa { font-weight: 800; color: #c0392b; font-size: 1rem; }
+    .tot-row.dp { color: #e67e22; font-weight: 700; }
+
+    .company-footer { margin-top: 16px; padding-top: 8px; border-top: 1px solid #111; font-size: 0.8rem; line-height: 1.4; color: #111; }
+    .company-footer .thanks { font-weight: bold; font-size: 0.9rem; margin-bottom: 5px; text-transform: uppercase; }
+
+    @media (max-width: 900px) {
+        body { overflow: auto; height: auto; }
+        .main-container { flex-direction: column; overflow: visible; }
+        .generator-panel { width: 100%; border-right: none; border-bottom: 2px solid #ddd; padding: 15px; overflow-y: visible; }
+        .preview-panel { padding: 10px; justify-content: flex-start; overflow-x: hidden; background: #95a5a6; }
+    }
+
+    @media print {
+        @page { size: A4 portrait; margin: 0; }
+        body { background: #fff; display: block; height: auto; overflow: visible; }
+        .app-header, .generator-panel { display: none !important; }
+        .preview-panel { background: none; padding: 0; display: block; overflow: visible; }
+        .a4 { box-shadow: none; margin: 0; zoom: 1 !important; page-break-after: avoid; }
+    }
+</style>
+</head>
+<body>
+
+<div class="app-header">Generator Invoice (A4)</div>
+
+<div class="main-container">
+
+    <!-- ================= FORM ================= -->
+    <div class="generator-panel">
+        <h2>1. Data Klien & Invoice</h2>
+        <div class="form-group">
+            <label>Pemesan (Ditagihkan Kepada)</label>
+            <input type="text" id="f-client" value="PT. Nama Klien Sejahtera">
+        </div>
+        <div class="row-2">
+            <div class="form-group">
+                <label>Nomor Invoice</label>
+                <input type="text" id="f-no" value="INV-2026-001">
+            </div>
+            <div class="form-group">
+                <label>Tanggal Invoice</label>
+                <input type="text" id="f-date" value="28 Juli 2026">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Tanggal Acara (yang di-keep)</label>
+            <input type="text" id="f-event" placeholder="cth: 15 Agustus 2026">
+        </div>
+
+        <h2>2. Status Pembayaran</h2>
+        <div class="form-group">
+            <label>Status</label>
+            <select id="f-status">
+                <option value="paid">PAID (Sudah Lunas)</option>
+                <option value="dp">DP (Keep Tanggal)</option>
+                <option value="none">Belum Bayar (tanpa stempel)</option>
+            </select>
+        </div>
+        <div id="dp-box">
+            <div class="form-group" style="margin-bottom:0">
+                <label>Nominal DP (Rp)</label>
+                <input type="number" id="f-dp" value="300000">
+                <div class="hint">Sisa pembayaran dihitung otomatis dari total.</div>
+            </div>
+        </div>
+
+        <h2>3. Paket Photobooth</h2>
+        <div class="row-2">
+            <div class="form-group">
+                <label>Pilih Paket</label>
+                <select id="f-pkg">
+                    <option value="standar">Photobooth Standar</option>
+                    <option value="classic">Photobooth Classic</option>
+                    <option value="newspaper">Paket Newspaper</option>
+                    <option value="manual">Manual / Lainnya</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Durasi</label>
+                <select id="f-dur">
+                    <option value="2">2 Jam Unlimited</option>
+                    <option value="3" selected>3 Jam Unlimited</option>
+                    <option value="5">5 Jam Unlimited</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Benefit Paket (1 baris = 1 benefit; awali "+" untuk bonus)</label>
+            <textarea id="f-benefits"></textarea>
+            <div class="hint">Terisi otomatis saat paket dipilih, tetap bisa diedit manual.</div>
+        </div>
+        <div class="form-group">
+            <label><input type="checkbox" id="f-showben" checked> Tampilkan kotak benefit di invoice</label>
+        </div>
+
+        <h2>4. Detail Layanan (Max 3)</h2>
+        <div class="form-group">
+            <label>Keterangan 1 (Paket)</label>
+            <input type="text" id="f-desc1">
+        </div>
+        <div class="row-2">
+            <div class="form-group">
+                <label>Harga 1 (Rp)</label>
+                <input type="number" id="f-price1">
+            </div>
+            <div class="form-group">
+                <label>Jumlah 1</label>
+                <input type="number" id="f-qty1" value="1">
+            </div>
+        </div>
+        <hr style="border:0;border-top:1px dashed #ddd;margin:15px 0;">
+
+        <div class="form-group">
+            <label>Keterangan 2 (Tambahan)</label>
+            <input type="text" id="f-desc2" value="Custom Template Design">
+        </div>
+        <div class="row-2">
+            <div class="form-group">
+                <label>Harga 2 (Rp)</label>
+                <input type="number" id="f-price2" value="200000">
+            </div>
+            <div class="form-group">
+                <label>Jumlah 2</label>
+                <input type="number" id="f-qty2" value="1">
+            </div>
+        </div>
+        <hr style="border:0;border-top:1px dashed #ddd;margin:15px 0;">
+
+        <div class="form-group">
+            <label>Keterangan 3 (Opsional)</label>
+            <input type="text" id="f-desc3" placeholder="Opsional...">
+        </div>
+        <div class="row-2">
+            <div class="form-group">
+                <label>Harga 3 (Rp)</label>
+                <input type="number" id="f-price3" placeholder="0">
+            </div>
+            <div class="form-group">
+                <label>Jumlah 3</label>
+                <input type="number" id="f-qty3" placeholder="0">
+            </div>
+        </div>
+
+        <button class="btn-print" onclick="window.print()">Cetak / Simpan PDF</button>
+    </div>
+
+    <!-- ================= PREVIEW ================= -->
+    <div class="preview-panel" id="preview-panel">
+        <div class="a4" id="invoice-sheet">
+            <div class="stamp" id="p-stamp"></div>
+
+            <div class="inv-header">
+                <div class="inv-title">INVOICE</div>
+                <img id="inv-logo-img" src="logo.png" alt="Logo">
+            </div>
+
+            <div class="inv-meta">
+                <div>
+                    <div class="meta-label">PEMESAN:</div>
+                    <div class="meta-val" id="p-client"></div>
+                    <div id="p-event-wrap" style="display:none">
+                        <div class="meta-label">Tanggal Acara:</div>
+                        <div class="meta-val" id="p-event"></div>
+                    </div>
+                </div>
+                <div class="meta-right">
+                    <div class="meta-label">No. Invoice:</div>
+                    <div class="meta-val" id="p-no"></div>
+                    <div class="meta-label">Tanggal Invoice:</div>
+                    <div class="meta-val" id="p-date"></div>
+                </div>
+            </div>
+
+            <table class="inv-table">
+                <thead>
+                    <tr><th>Keterangan</th><th>Harga</th><th>Jumlah</th><th>Total</th></tr>
+                </thead>
+                <tbody>
+                    <tr id="row-1"><td id="p-desc1"></td><td id="p-price1"></td><td id="p-qty1"></td><td id="p-tot1"></td></tr>
+                    <tr id="row-2"><td id="p-desc2"></td><td id="p-price2"></td><td id="p-qty2"></td><td id="p-tot2"></td></tr>
+                    <tr id="row-3" style="display:none"><td id="p-desc3"></td><td id="p-price3"></td><td id="p-qty3"></td><td id="p-tot3"></td></tr>
+                </tbody>
+            </table>
+
+            <div class="benefit-box" id="p-benefit-box">
+                <div class="benefit-title" id="p-benefit-title">Benefit Paket</div>
+                <ul class="benefit-list" id="p-benefits"></ul>
+                <div id="p-bonus-wrap" style="display:none">
+                    <div class="bonus-title">Bonus</div>
+                    <ul class="benefit-list bonus-list" id="p-bonus"></ul>
+                </div>
+            </div>
+            <div style="flex:1"></div>
+
+            <div class="inv-footer-calc">
+                <div class="payment-info">
+                    <strong>PEMBAYARAN :</strong><br>
+                    Nama : Yoga Nugraha<br>
+                    No. Rekening : 1943748616 (BNI)
+                    <div class="note" id="p-note"></div>
+                </div>
+                <div class="totals">
+                    <div class="tot-row grand"><span>TOTAL :</span><span id="p-total"></span></div>
+                    <div class="tot-row dp" id="p-dp-row" style="display:none"><span>DP DITERIMA :</span><span id="p-dp"></span></div>
+                    <div class="tot-row sisa" id="p-sisa-row" style="display:none"><span>SISA PEMBAYARAN :</span><span id="p-sisa"></span></div>
+                </div>
+            </div>
+
+            <div class="company-footer">
+                <div class="thanks">TERIMAKASIH ATAS PEMBELIAN ANDA</div>
+                <div>
+                    Temani Photobooth<br>
+                    Jalan Merpati VI , RT.2/RW.1, Rawa Panjang. KAB. BOGOR, BOJONGGEDE, JAWA BARAT, 16920.<br>
+                    0821-2861-4356 (Admin Temani Photobooth)
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ===== DATA PAKET (dari price list promo 2026) =====
+    const PACKAGES = {
+        standar: {
+            name: 'Photobooth Standar',
+            prices: { 2: 1299000, 3: 1499000, 5: 1950000 },
+            benefits: ['Unlimited Print', 'Print 2R & 4R', 'Monitor 24 inch', 'Kamera Canon DSLR', 'Lighting Studio',
+                       'Free desain frame', 'Free transportasi', 'Properti', 'Soft file', 'Gift', '2 Profesional Crew', 'Backdrop']
+        },
+        classic: {
+            name: 'Photobooth Classic',
+            prices: { 2: 1399000, 3: 1599000, 5: 1999000 },
+            benefits: ['Unlimited Print', 'Kamera Canon DSLR', 'Live View', 'Print 2R & 4R', 'Lighting Studio',
+                       'Free desain frame', 'Free transportasi', 'Properti', 'Soft file', 'Gift', '2 Profesional Crew',
+                       'Original Foto', 'Backdrop',
+                       '+ Prioritas Video Live View', '+ Free keychain', '+ Figura Foto 10R']
+        },
+        newspaper: {
+            name: 'Paket Newspaper',
+            prices: { 2: 1320000, 3: 1499000, 5: 1999000 },
+            benefits: ['Unlimited Print', 'Print A4 Koran', 'Monitor 24 inch', 'Lighting Studio',
+                       'Free desain frame', 'Free transportasi', 'Properti', 'Soft file', 'Gift', '2 Profesional Crew', 'Backdrop']
+        }
+    };
+
+    const $ = id => document.getElementById(id);
+
+    function formatRupiah(n) {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
+    }
+    function formatRupiahKustom(n) {
+        return "RP " + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+    // Isi otomatis keterangan, harga & benefit saat paket/durasi berubah
+    function applyPackage() {
+        const key = $('f-pkg').value;
+        if (key === 'manual') return;
+        const pkg = PACKAGES[key], dur = $('f-dur').value;
+        $('f-desc1').value = pkg.name + ' - ' + dur + ' Jam Unlimited';
+        $('f-price1').value = pkg.prices[dur];
+        $('f-benefits').value = pkg.benefits.join('\n');
+        updatePreview();
+    }
+
+    function fillList(ul, items) {
+        ul.innerHTML = '';
+        items.forEach(t => { const li = document.createElement('li'); li.textContent = t; ul.appendChild(li); });
+    }
+
+    function updatePreview() {
+        $('p-client').innerText = $('f-client').value || '-';
+        $('p-no').innerText = $('f-no').value || '-';
+        $('p-date').innerText = $('f-date').value || '-';
+
+        const ev = $('f-event').value.trim();
+        $('p-event-wrap').style.display = ev ? 'block' : 'none';
+        $('p-event').innerText = ev;
+
+        // Item
+        let grandTotal = 0;
+        for (let i = 1; i <= 3; i++) {
+            const desc = $('f-desc' + i).value;
+            const price = parseFloat($('f-price' + i).value) || 0;
+            const qty = parseFloat($('f-qty' + i).value) || 0;
+            const row = $('row-' + i);
+            if (desc.trim() !== '' || (price > 0 && qty > 0)) {
+                const tot = price * qty;
+                row.style.display = 'table-row';
+                $('p-desc' + i).innerText = desc;
+                $('p-price' + i).innerText = formatRupiah(price);
+                $('p-qty' + i).innerText = qty;
+                $('p-tot' + i).innerText = formatRupiah(tot);
+                grandTotal += tot;
+            } else {
+                row.style.display = 'none';
+            }
+        }
+        $('p-total').innerText = formatRupiahKustom(grandTotal);
+
+        // Status pembayaran
+        const status = $('f-status').value;
+        const stamp = $('p-stamp');
+        stamp.className = 'stamp';
+        $('dp-box').style.display = status === 'dp' ? 'block' : 'none';
+        $('p-dp-row').style.display = 'none';
+        $('p-sisa-row').style.display = 'none';
+        $('p-note').innerText = '';
+
+        if (status === 'paid') {
+            stamp.classList.add('paid'); stamp.innerText = 'PAID';
+            $('p-note').innerText = 'Pembayaran telah diterima lunas.';
+        } else if (status === 'dp') {
+            stamp.classList.add('dp'); stamp.innerText = 'DP';
+            const dp = Math.min(parseFloat($('f-dp').value) || 0, grandTotal);
+            $('p-dp').innerText = formatRupiahKustom(dp);
+            $('p-sisa').innerText = formatRupiahKustom(grandTotal - dp);
+            $('p-dp-row').style.display = 'flex';
+            $('p-sisa-row').style.display = 'flex';
+            $('p-note').innerText = 'DP digunakan untuk mengunci (keep) tanggal acara. Sisa pembayaran dilunasi sebelum / pada hari acara.';
+        }
+
+        // Benefit
+        const lines = $('f-benefits').value.split('\n').map(s => s.trim()).filter(Boolean);
+        const main = lines.filter(l => !l.startsWith('+'));
+        const bonus = lines.filter(l => l.startsWith('+')).map(l => l.replace(/^\+\s*/, ''));
+        const show = $('f-showben').checked && lines.length > 0;
+        $('p-benefit-box').style.display = show ? 'block' : 'none';
+        fillList($('p-benefits'), main);
+        fillList($('p-bonus'), bonus);
+        $('p-bonus-wrap').style.display = bonus.length ? 'block' : 'none';
+        const key = $('f-pkg').value;
+        $('p-benefit-title').innerText = key === 'manual' ? 'Benefit Paket' : 'Benefit ' + PACKAGES[key].name;
+
+        fitToScreen();
+    }
+
+    // Skala preview otomatis di layar kecil (HP)
+    function fitToScreen() {
+        const panel = $('preview-panel');
+        const sheet = $('invoice-sheet');
+        sheet.style.setProperty('--z', 1);
+        if (window.innerWidth <= 900) {
+            const avail = panel.clientWidth - 20;
+            const w = sheet.offsetWidth;
+            sheet.style.setProperty('--z', Math.min(1, avail / w));
+        }
+    }
+
+    ['f-pkg', 'f-dur'].forEach(id => $(id).addEventListener('change', applyPackage));
+    document.querySelectorAll('.generator-panel input, .generator-panel select, .generator-panel textarea')
+        .forEach(el => { el.addEventListener('input', updatePreview); el.addEventListener('change', updatePreview); });
+    window.addEventListener('resize', fitToScreen);
+
+    window.onload = function () { applyPackage(); updatePreview(); };
+</script>
+
+</body>
+</html>
