@@ -152,13 +152,10 @@
             </div>
             <div class="form-group">
                 <label>Durasi</label>
-                <select id="f-dur">
-                    <option value="2">2 Jam Unlimited</option>
-                    <option value="3" selected>3 Jam Unlimited</option>
-                    <option value="5">5 Jam Unlimited</option>
-                </select>
+                <select id="f-dur"></select>
             </div>
         </div>
+        <div class="hint" id="f-dur-hint" style="display:none;margin:-8px 0 14px;color:#c0392b">Harga durasi ini belum ada di price list, isi manual di kolom Harga 1.</div>
         <div class="form-group">
             <label>Benefit Paket (1 baris = 1 benefit; awali "+" untuk bonus)</label>
             <textarea id="f-benefits"></textarea>
@@ -320,6 +317,17 @@
 
     const $ = id => document.getElementById(id);
 
+    // Isi pilihan durasi 2 - 15 jam
+    (function () {
+        const sel = document.getElementById('f-dur');
+        for (let h = 2; h <= 15; h++) {
+            const o = document.createElement('option');
+            o.value = h; o.textContent = h + ' Jam Unlimited';
+            if (h === 3) o.selected = true;
+            sel.appendChild(o);
+        }
+    })();
+
     function formatRupiah(n) {
         return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(n);
     }
@@ -333,7 +341,9 @@
         if (key === 'manual') return;
         const pkg = PACKAGES[key], dur = $('f-dur').value;
         $('f-desc1').value = pkg.name + ' - ' + dur + ' Jam Unlimited';
-        $('f-price1').value = pkg.prices[dur];
+        const price = pkg.prices[dur];
+        $('f-price1').value = price !== undefined ? price : '';
+        $('f-dur-hint').style.display = price !== undefined ? 'none' : 'block';
         $('f-benefits').value = pkg.benefits.join('\n');
         updatePreview();
     }
