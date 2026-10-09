@@ -75,8 +75,9 @@
     .tot-row.sisa { font-weight: 800; color: #c0392b; font-size: 1rem; }
     .tot-row.dp { color: #e67e22; font-weight: 700; }
 
+    #p-qris-img { display: none; max-width: 38mm; max-height: 38mm; margin-top: 6px; border: 1px solid #ccc; }
     .company-footer { margin-top: 16px; padding-top: 8px; border-top: 1px solid #111; font-size: 0.8rem; line-height: 1.4; color: #111; }
-    .company-footer .thanks { font-weight: bold; font-size: 0.9rem; margin-bottom: 5px; text-transform: uppercase; }
+    .company-footer .thanks { font-weight: bold; font-size: 0.9rem; margin-bottom: 5px; }
 
     @media (max-width: 900px) {
         body { overflow: auto; height: auto; }
@@ -137,6 +138,34 @@
                 <input type="number" id="f-dp" value="300000">
                 <div class="hint">Sisa pembayaran dihitung otomatis dari total.</div>
             </div>
+        </div>
+
+        <div class="form-group">
+            <label>Metode Pembayaran</label>
+            <select id="f-method">
+                <option value="bank">Transfer Bank (BNI)</option>
+                <option value="qris">QRIS</option>
+            </select>
+        </div>
+        <div class="form-group" id="qris-upload" style="display:none">
+            <label>Gambar QRIS (opsional)</label>
+            <input type="file" id="f-qris" accept="image/*">
+            <div class="hint">Gambar hanya dipakai di invoice ini, tidak diunggah ke mana pun.</div>
+        </div>
+
+        <div class="form-group">
+            <label>Kalimat Ucapan Terima Kasih</label>
+            <select id="f-thanks-preset">
+                <option>TERIMAKASIH ATAS PEMBELIAN ANDA</option>
+                <option>Terima kasih atas kepercayaan Anda menggunakan jasa kami.</option>
+                <option>Terima kasih atas kerja sama dan kepercayaan Anda.</option>
+                <option>Semoga Anda puas dengan layanan kami. Sampai jumpa di Event berikutnya!</option>
+                <option>Terima kasih telah memercayakan kebutuhan Anda kepada kami.</option>
+                <option>Terima kasih atas pembayaran Anda.</option>
+                <option>Terima kasih atas kerja samanya.</option>
+                <option value="">Tulis sendiri...</option>
+            </select>
+            <input type="text" id="f-thanks" style="margin-top:6px" placeholder="Edit kalimat di sini">
         </div>
 
         <h2>3. Paket Photobooth</h2>
@@ -267,8 +296,14 @@
             <div class="inv-footer-calc">
                 <div class="payment-info">
                     <strong>PEMBAYARAN :</strong><br>
-                    Nama : Yoga Nugraha<br>
-                    No. Rekening : 1943748616 (BNI)
+                    <div id="p-pay-bank">
+                        Nama : Yoga Nugraha<br>
+                        No. Rekening : 1943748616 (BNI)
+                    </div>
+                    <div id="p-pay-qris" style="display:none">
+                        Metode : QRIS Temani Photobooth<br>
+                        <img id="p-qris-img" alt="QRIS">
+                    </div>
                     <div class="note" id="p-note"></div>
                 </div>
                 <div class="totals">
@@ -279,7 +314,7 @@
             </div>
 
             <div class="company-footer">
-                <div class="thanks">TERIMAKASIH ATAS PEMBELIAN ANDA</div>
+                <div class="thanks" id="p-thanks"></div>
                 <div>
                     Temani Photobooth<br>
                     Jalan Merpati VI , RT.2/RW.1, Rawa Panjang. KAB. BOGOR, BOJONGGEDE, JAWA BARAT, 16920.<br>
@@ -417,6 +452,17 @@
         const key = $('f-pkg').value;
         $('p-benefit-title').innerText = key === 'manual' ? 'Benefit Paket' : 'Benefit ' + PACKAGES[key].name;
 
+        // Metode pembayaran
+        const qris = $('f-method').value === 'qris';
+        $('p-pay-bank').style.display = qris ? 'none' : 'block';
+        $('p-pay-qris').style.display = qris ? 'block' : 'none';
+        $('qris-upload').style.display = qris ? 'block' : 'none';
+        const img = $('p-qris-img');
+        img.style.display = qris && img.getAttribute('src') ? 'block' : 'none';
+
+        // Ucapan
+        $('p-thanks').innerText = $('f-thanks').value;
+
         fitToScreen();
     }
 
@@ -437,7 +483,19 @@
         .forEach(el => { el.addEventListener('input', updatePreview); el.addEventListener('change', updatePreview); });
     window.addEventListener('resize', fitToScreen);
 
-    window.onload = function () { applyPackage(); updatePreview(); };
+    $('f-thanks-preset').addEventListener('change', function () {
+        if (this.value) { $('f-thanks').value = this.value; } else { $('f-thanks').value = ''; $('f-thanks').focus(); }
+        updatePreview();
+    });
+    $('f-qris').addEventListener('change', function () {
+        const f = this.files[0];
+        if (!f) { $('p-qris-img').removeAttribute('src'); updatePreview(); return; }
+        const r = new FileReader();
+        r.onload = e => { $('p-qris-img').src = e.target.result; updatePreview(); };
+        r.readAsDataURL(f);
+    });
+
+    window.onload = function () { $('f-thanks').value = $('f-thanks-preset').value; applyPackage(); updatePreview(); };
 </script>
 
 </body>
