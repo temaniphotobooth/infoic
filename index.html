@@ -16,7 +16,7 @@
     .generator-panel h2:first-child { margin-top: 0; }
     .form-group { margin-bottom: 15px; }
     .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; color: #555; }
-    .form-group input[type="text"], .form-group input[type="number"], .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; font-family: inherit; background: #fff; }
+    .form-group input[type="text"], .form-group input[type="date"], .form-group input[type="number"], .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.9rem; font-family: inherit; background: #fff; }
     .form-group textarea { min-height: 150px; resize: vertical; line-height: 1.4; }
     .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52,152,219,0.2); }
     .hint { font-size: 0.72rem; color: #888; margin-top: 4px; }
@@ -115,7 +115,7 @@
             </div>
             <div class="form-group">
                 <label>Tanggal Invoice</label>
-                <input type="text" id="f-date" value="28 Juli 2026">
+                <input type="date" id="f-date">
             </div>
         </div>
         <div class="form-group">
@@ -391,7 +391,7 @@
     function updatePreview() {
         $('p-client').innerText = $('f-client').value || '-';
         $('p-no').innerText = $('f-no').value || '-';
-        $('p-date').innerText = $('f-date').value || '-';
+        $('p-date').innerText = formatTanggalID($('f-date').value);
 
         const ev = $('f-event').value.trim();
         $('p-event-wrap').style.display = ev ? 'block' : 'none';
@@ -495,7 +495,21 @@
         r.readAsDataURL(f);
     });
 
-    window.onload = function () { $('f-thanks').value = $('f-thanks-preset').value; applyPackage(); updatePreview(); };
+    // Tanggal invoice otomatis = hari ini (waktu lokal), tetap bisa diganti lewat kalender
+    function setTanggalHariIni() {
+        const d = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        $('f-date').value = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+    }
+
+    // Ubah 2026-11-10 menjadi "10 November 2026" untuk tampilan invoice
+    function formatTanggalID(v) {
+        if (!v) return '-';
+        const [y, m, d] = v.split('-').map(Number);
+        return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(y, m - 1, d));
+    }
+
+    window.onload = function () { setTanggalHariIni(); $('f-thanks').value = $('f-thanks-preset').value; applyPackage(); updatePreview(); };
 </script>
 
 </body>
