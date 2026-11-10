@@ -111,7 +111,8 @@
         <div class="row-2">
             <div class="form-group">
                 <label>Nomor Invoice</label>
-                <input type="text" id="f-no" value="INV-2026-001">
+                <input type="text" id="f-no">
+                <div class="hint">Otomatis lanjut setelah dicetak.</div>
             </div>
             <div class="form-group">
                 <label>Tanggal Invoice</label>
@@ -242,7 +243,7 @@
             </div>
         </div>
 
-        <button class="btn-print" onclick="window.print()">Cetak / Simpan PDF</button>
+        <button class="btn-print" onclick="cetakInvoice()">Cetak / Simpan PDF</button>
     </div>
 
     <!-- ================= PREVIEW ================= -->
@@ -509,7 +510,53 @@
         return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(y, m - 1, d));
     }
 
-    window.onload = function () { setTanggalHariIni(); $('f-thanks').value = $('f-thanks-preset').value; applyPackage(); updatePreview(); };
+    // ===== Nomor invoice otomatis (nomor yang sudah dicetak tidak dipakai lagi) =====
+    const INV_KEY = 'temani_inv_last';
+    let sedangCetak = false;
+
+    function bacaInvTerakhir() {
+        try { return JSON.parse(localStorage.getItem(INV_KEY)) || null; } catch (e) { return null; }
+    }
+    function simpanInvTerakhir(year, seq) {
+        try { localStorage.setItem(INV_KEY, JSON.stringify({ year: year, seq: seq })); } catch (e) {}
+    }
+    function formatNoInvoice(year, seq) {
+        return 'INV-' + year + '-' + String(seq).padStart(3, '0');
+    }
+    function parseNoInvoice(v) {
+        const m = /^INV-(\d{4})-(\d+)$/i.exec((v || '').trim());
+        return m ? { year: Number(m[1]), seq: Number(m[2]) } : null;
+    }
+    function nomorBerikutnya() {
+        const year = new Date().getFullYear();
+        const last = bacaInvTerakhir();
+        return formatNoInvoice(year, last && last.year === year ? last.seq + 1 : 1);
+    }
+    function setNomorBerikutnya() {
+        $('f-no').value = nomorBerikutnya();
+    }
+
+    function cetakInvoice() {
+        const cur = parseNoInvoice($('f-no').value);
+        if (cur) {
+            const last = bacaInvTerakhir();
+            const sudahPakai = last && (cur.year < last.year || (cur.year === last.year && cur.seq <= last.seq));
+            if (sudahPakai && !confirm('Nomor ' + $('f-no').value + ' sudah pernah dipakai. Tetap cetak dengan nomor ini?')) return;
+            if (!sudahPakai) simpanInvTerakhir(cur.year, cur.seq);
+            sedangCetak = true;
+        }
+        window.print();
+    }
+
+    // Setelah dialog cetak ditutup, otomatis pindah ke nomor berikutnya
+    window.addEventListener('afterprint', function () {
+        if (!sedangCetak) return;
+        sedangCetak = false;
+        setNomorBerikutnya();
+        updatePreview();
+    });
+
+    window.onload = function () { setTanggalHariIni(); setNomorBerikutnya(); $('f-thanks').value = $('f-thanks-preset').value; applyPackage(); updatePreview(); };
 </script>
 
 </body>
